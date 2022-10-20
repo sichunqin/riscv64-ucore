@@ -32,7 +32,7 @@ GDB		:= $(GCCPREFIX)gdb
 CC		:= $(GCCPREFIX)gcc
 CFLAGS  := -mcmodel=medany -O2 -std=gnu99 -Wno-unused
 CFLAGS	+= -fno-builtin -Wall -nostdinc $(DEFS)
-CFLAGS	+= -fno-stack-protector -ffunction-sections -fdata-sections
+CFLAGS	+= -fno-stack-protector -ffunction-sections -fdata-sections -g
 CTYPE	:= c S
 
 LD      := $(GCCPREFIX)ld
@@ -160,7 +160,7 @@ $(SFSROOT):
 	$(V)$(MKDIR) $@
 
 $(SFSIMG): $(SFSROOT) $(SFSBINS) | $(call totarget,mksfs)
-	$(V)dd if=/dev/zero of=$@ bs=1kB count=480
+	$(V)dd if=/dev/zero of=$@ bs=1kB count=4800
 	@$(call totarget,mksfs) $@ $(SFSROOT)
 
 $(call create_target,sfs.img)
@@ -256,7 +256,7 @@ TARGETS: $(TARGETS)
 
 .DEFAULT_GOAL := TARGETS
 
-QEMUOPTS = -hda $(UCOREIMG) -drive file=$(SWAPIMG),media=disk,cache=writeback -drive file=$(SFSIMG),media=disk,cache=writeback 
+QEMUOPTS = -hda $(UCOREIMG) -drive file=$(SWAPIMG),media=disk,cache=writeback -drive file=$(SFSIMG),media=disk,cache=writeback
 
 .PHONY: qemu spike
 
@@ -265,9 +265,16 @@ qemu: $(UCOREIMG) $(SWAPIMG) $(SFSIMG)
 	$(V)$(QEMU) \
 		-machine virt \
 		-nographic \
-		-bios default \
-		-device loader,file=$(UCOREIMG),addr=0x80200000
+        -bios ../common/opensbi-riscv64-virt-fw_jump.bin \
+		-device loader,file=$(UCOREIMG),addr=0x80200000 &
 
+.PHONY: debug
+debug: $(UCOREIMG) $(SWAPIMG) $(SFSIMG)
+	$(V)$(QEMU) \
+  		-machine virt \
+		-nographic \
+        -bios default \
+		-device loader,file=$(kernel),addr=0x80200000
 
 spike: $(UCOREIMG) $(SWAPIMG) $(SFSIMG)
 	$(V)$(SPIKE) $(UCOREIMG)
@@ -287,7 +294,7 @@ run-nox-%: build-%
 	$(V)$(QEMU) -serial mon:stdio $(QEMUOPTS) -nographic
 
 build-%: touch
-	$(V)$(MAKE) $(MAKEOPTS) "DEFS+=-DTEST=$*" 
+	$(V)$(MAKE) $(MAKEOPTS) "DEFS+=-DTEST=$*"
 
 script-%: touch
 	$(V)$(MAKE) $(MAKEOPTS) "DEFS+=-DTEST=sh -DTESTSCRIPT=/script/$*"
@@ -331,5 +338,9 @@ tags:
 	@echo TAGS ALL
 	$(V)rm -f cscope.files cscope.in.out cscope.out cscope.po.out tags
 	$(V)find . -type f -name "*.[chS]" >cscope.files
-	$(V)cscope -bq 
+	$(V)cscope -bq
 	$(V)ctags -L cscope.files
+
+
+
+
