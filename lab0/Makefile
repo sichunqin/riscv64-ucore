@@ -1,3 +1,5 @@
+include ../common/common.mk
+
 PROJ	:= lab1
 EMPTY	:=
 SPACE	:= $(EMPTY) $(EMPTY)
@@ -13,6 +15,11 @@ ifndef QEMU
 QEMU := qemu-system-riscv64
 endif
 
+ifndef GDB
+GDB := riscv64-unknown-elf-gdb
+endif
+
+
 
 # eliminate default suffix rules
 .SUFFIXES: .c .S .h
@@ -27,7 +34,7 @@ HOSTCFLAGS	:= -Wall -O2
 GDB		:= $(GCCPREFIX)gdb
 
 CC		:= $(GCCPREFIX)gcc
-CFLAGS  := -mcmodel=medany -std=gnu99 -Wno-unused -Werror
+CFLAGS  := -mcmodel=medany -std=gnu99 -Wno-unused -Werror -g
 CFLAGS	+= -fno-builtin -Wall -O2 -nostdinc $(DEFS)
 CFLAGS	+= -fno-stack-protector -ffunction-sections -fdata-sections
 CTYPE	:= c S
@@ -80,7 +87,7 @@ match = $(shell echo $(2) | $(AWK) '{for(i=1;i<=NF;i++){if(match("$(1)","^"$$(i)
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # include kernel/user
 
-INCLUDE	+= libs 
+INCLUDE	+= libs
 
 CFLAGS	+= $(addprefix -I,$(INCLUDE))
 
@@ -155,14 +162,14 @@ TARGETS: $(TARGETS)
 
 .DEFAULT_GOAL := TARGETS
 
-.PHONY: qemu 
+.PHONY: qemu
 qemu: $(UCOREIMG) $(SWAPIMG) $(SFSIMG)
 #	$(V)$(QEMU) -kernel $(UCOREIMG) -nographic
 	$(V)$(QEMU) \
 		-machine virt \
 		-nographic \
-		-bios default \
-		-device loader,file=$(UCOREIMG),addr=0x80200000
+        -bios ../common/opensbi-riscv64-virt-fw_jump.bin \
+		-device loader,file=$(UCOREIMG),addr=0x80200000 &
 
 .PHONY: grade touch
 
@@ -203,5 +210,7 @@ tags:
 	@echo TAGS ALL
 	$(V)rm -f cscope.files cscope.in.out cscope.out cscope.po.out tags
 	$(V)find . -type f -name "*.[chS]" >cscope.files
-	$(V)cscope -bq 
+	$(V)cscope -bq
 	$(V)ctags -L cscope.files
+
+
