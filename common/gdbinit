@@ -1,0 +1,3 @@
+b kern_init
+target remote : 1234
+c

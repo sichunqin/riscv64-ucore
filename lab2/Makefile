@@ -30,7 +30,7 @@ HOSTCFLAGS	:= -Wall -O2
 GDB		:= $(GCCPREFIX)gdb
 
 CC		:= $(GCCPREFIX)gcc
-CFLAGS  := -mcmodel=medany -std=gnu99 -Wno-unused -Werror 
+CFLAGS  := -mcmodel=medany -std=gnu99 -Wno-unused -Werror -g
 CFLAGS	+= -fno-builtin -Wall -O2 -nostdinc $(DEFS)
 CFLAGS	+= -fno-stack-protector -ffunction-sections -fdata-sections
 CFLAGS2 = $(CFLAGS) -D ucore_test
@@ -167,6 +167,17 @@ qemu: $(UCOREIMG) $(SWAPIMG) $(SFSIMG)
 		-nographic \
 		-bios default \
 		-device loader,file=$(UCOREIMG),addr=0x80200000
+.PHONY: debug
+debug: $(UCOREIMG) $(SWAPIMG) $(SFSIMG)
+#	$(V)$(QEMU) -kernel $(UCOREIMG) -nographic
+	$(V)$(QEMU) \
+		-s -S  \
+		-machine virt \
+		-nographic \
+		-bios default \
+		-device loader,file=$(UCOREIMG),addr=0x80200000 &
+	$(V)$(GDB) \
+	$(kernel) -q -x ../common/gdbinit
 
 test: $(UCOREIMG) $(SWAPIMG) $(SFSIMG)
 	$(V)$(QEMU) \
@@ -216,5 +227,5 @@ tags:
 	@echo TAGS ALL
 	$(V)rm -f cscope.files cscope.in.out cscope.out cscope.po.out tags
 	$(V)find . -type f -name "*.[chS]" >cscope.files
-	$(V)cscope -bq 
+	$(V)cscope -bq
 	$(V)ctags -L cscope.files
