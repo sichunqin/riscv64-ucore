@@ -394,7 +394,7 @@ static void check_alloc_page(void) {
 static void check_pgdir(void) {
     // assert(npage <= KMEMSIZE / PGSIZE);
     // The memory starts at 2GB in RISC-V
-    // so npage is always larger than KMEMSIZE / PGSIZE
+    // so npage is always smaller than KMEMSIZE / PGSIZE
     assert(npage <= KERNTOP / PGSIZE);
     assert(boot_pgdir != NULL && (uint32_t)PGOFF(boot_pgdir) == 0);
     assert(get_page(boot_pgdir, 0x0, NULL) == NULL);
